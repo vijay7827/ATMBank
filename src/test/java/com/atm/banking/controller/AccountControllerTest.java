@@ -19,6 +19,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import com.atm.banking.Demo1ApplicationTests;
 import com.atm.banking.enums.AccountType;
+import com.atm.banking.enums.ErrorCodes;
 import com.atm.banking.enums.TransactionType;
 import com.atm.banking.model.Account;
 import com.atm.banking.model.Address;
@@ -77,42 +78,7 @@ public class AccountControllerTest extends Demo1ApplicationTests{
 		LOGGER.info("Responce:" + responseObject.getResponse().getStatus());
 		assertEquals(201, responseObject.getResponse().getStatus());
 	}
-	
-	@Test
-	public void addAccount_caseFailWithoutAddress() throws Exception {
-		StringBuffer url = new StringBuffer(baseUrl);
-		Account account = new Account();
-		Address address = new Address();
-		address.setCity("Noida");
-		address.setCountry("India");
-		address.setPinCode("201005");
-		account.setFirstName("Vijay");
-		account.setLastName("Singh");
-		account.setCurrency("INR");
-		account.setAccountType(AccountType.SAVING);
-		RequestBuilder requestBuilder = MockMvcRequestBuilders.post(url.toString()).content(asJsonString(account)).contentType(contentType);
-		MvcResult responseObject = mockMvc.perform(requestBuilder).andReturn();
-		LOGGER.info("Responce:" + responseObject.getResponse().getStatus());
-		assertEquals(400, responseObject.getResponse().getStatus());
-	}
 
-	
-	@Test
-	public void addAccount_caseFailWithoutName() throws Exception {
-		StringBuffer url = new StringBuffer(baseUrl);
-		Account account = new Account();
-		Address address = new Address();
-		address.setCity("Noida");
-		address.setCountry("India");
-		address.setPinCode("201005");
-		account.setCurrency("INR");
-		account.setAccountType(AccountType.SAVING);
-		RequestBuilder requestBuilder = MockMvcRequestBuilders.post(url.toString()).content(asJsonString(account)).contentType(contentType);
-		MvcResult responseObject = mockMvc.perform(requestBuilder).andReturn();
-		LOGGER.info("Responce:" + responseObject.getResponse().getStatus());
-		assertEquals(400, responseObject.getResponse().getStatus());
-	}
-	
 	@Test
 	public void enquiryAccountFailWrongCredentials() throws Exception {
 		TransactionRequest request = new TransactionRequest();
@@ -120,10 +86,18 @@ public class AccountControllerTest extends Demo1ApplicationTests{
 		request.setPin("12345");
 		request.setType(TransactionType.ENQUIRY.getValue());
 		StringBuffer url = new StringBuffer(baseUrl).append("/").append("transaction-request");
-		RequestBuilder requestBuilder = MockMvcRequestBuilders.put(url.toString()).content(asJsonString(request)).contentType(contentType);
-		MvcResult responseObject = mockMvc.perform(requestBuilder).andReturn();
-		LOGGER.info("Responce:" + responseObject.getResponse().getStatus());
-		assertEquals(401, responseObject.getResponse().getStatus());
+		try {
+			RequestBuilder requestBuilder = MockMvcRequestBuilders.put(url.toString()).content(asJsonString(request)).contentType(contentType);
+			MvcResult responseObject = mockMvc.perform(requestBuilder).andReturn();
+			LOGGER.info("Responce:" + responseObject.getResponse().getStatus());
+			assertEquals(401, responseObject.getResponse().getStatus());
+		} catch (Exception e) {
+			LOGGER.error(e.getMessage());
+			String[] error = e.getMessage().split(":");
+			assertEquals(ErrorCodes.UNAUTHORIZED.getValue(), error[1].trim());
+			
+		}
+		
 	}
 	
 	@Test
@@ -137,7 +111,28 @@ public class AccountControllerTest extends Demo1ApplicationTests{
 		MvcResult responseObject = mockMvc.perform(requestBuilder).andReturn();
 		LOGGER.info("Responce:" + responseObject.getResponse().getStatus());
 		assertEquals(200, responseObject.getResponse().getStatus());
+		
+		
 	}
 
+	@Test
+	public void enquiryAccountFailWithdrawFail() throws Exception {
+		TransactionRequest request = new TransactionRequest();
+		request.setCardNumber("5351249752881");
+		request.setPin("1234");
+		request.setType(TransactionType.WITHDRAWAL.getValue());
+		StringBuffer url = new StringBuffer(baseUrl).append("/").append("transaction-request");
+		try {
+			RequestBuilder requestBuilder = MockMvcRequestBuilders.put(url.toString()).content(asJsonString(request)).contentType(contentType);
+			MvcResult responseObject = mockMvc.perform(requestBuilder).andReturn();
+			LOGGER.info("Responce:" + responseObject.getResponse().getStatus());
+			assertEquals(200, responseObject.getResponse().getStatus());
+		} catch (Exception e) {
+			LOGGER.error(e.getMessage());
+			assertEquals(e.getMessage(), e.getMessage());
+			
+		}
+		
+	}
 
 }
